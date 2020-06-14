@@ -1,0 +1,59 @@
+---
+title: "Traffic violation and motor vehicle crash trend study"
+output: 
+  pdf_document: 
+    toc: yes
+    latex_engine: lualatex
+---
+
+# 1. Background
+
+The Road Safety and Transport Regulation 1999 has witnessed several piece-meal revision of its section or subsection throughout the years. Nevertheless, it has not been revised in whole.
+
+Since the enactment of the Road Safety and Transport Act in 1999, the Authority has received several 
+
+# 2. Need for Road Safety & Transport Regulation update
+
+In the last 8 years (2012-2019), motor vehicle crashes (MVC) has increased from `r (MVC_data$Time[1]) `
+___ in ___  to ___ in ____, which is a increase of ___ %.
+```{r echo = FALSE}
+
+data_path <- "MVC_compiled_data.xlsx"
+MVC_data_original <-  readxl::read_xlsx(data_path)
+
+MVC_data <- MVC_data_original %>% 
+    select(-no_MVC)
+
+MVC_data <-  MVC_data %>% 
+    pivot_longer(-Time, names_to = "Elements", values_to = "Frequency") %>% 
+    separate(Elements, c("crash_severity", "gender"), sep = "_")
+
+MVC_data %>% 
+    ggplot(aes(x = Time, y = Frequency, color = gender)) +
+    geom_line() +
+    facet_grid(crash_severity~.,) +
+    theme_bw() +
+    labs(x = "Year",
+         y = "Number of road users",
+         title = "Trend of road user injury and death due to motor vehicle crash",
+         color = "") +
+    scale_color_discrete(labels = c("Female", "Male")) +
+    theme(axis.text = element_text(size = 10, family = "Times"),
+          axis.title = element_text(size = 10, family = "Times"),
+          plot.title = element_text(size = 12, family = "Times", face = "bold",
+                                    hjust = 0.5),
+          legend.position = "top")
+```
+
+- increasing MVC
+- increasing TIN
+- repeated offenders
+
+# 3. Proposed changes
+
+
+# 4. Way forward
+
+
+
+
