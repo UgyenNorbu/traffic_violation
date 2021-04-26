@@ -1,13 +1,15 @@
-library(ggplot2)
 library(lubridate)
 library(scales)
 library(janitor)
+library(tidyverse)
+
 file_path <- "offense_details.xlsx"
 violation_data <- readxl::read_xlsx(file_path)
 
+#Defining custom theme attributes
 my_theme <- theme(axis.text = element_text(size = 11, family = "Times"),
-      axis.title = element_text(size = 12, family = "Times"),
-      legend.position = "top")
+                  axis.title = element_text(size = 12, family = "Times"),
+                  legend.position = "top")
 
 # 1. TRAFFIC VIOLATION TREND ----------
 
@@ -15,6 +17,7 @@ by_month <- violation_data %>%
     group_by(offence_date = floor_date(Offence_Date, "month")) %>%
     summarize(no_of_off = n())
 
+#Select traffic violation data from year 2011-2020
 selected_years <- by_month %>% 
     filter(!is.na(offence_date)) %>% 
     filter(year(offence_date) > 2011) %>%
@@ -26,9 +29,9 @@ selected_years %>%
     ggplot(aes(x = offence_date, y = no_of_off)) +
     geom_area(fill = "#FDEDEC", colour ="#F5B7B1", alpha = 0.5) +
     geom_line(aes(x = offence_date, y = annual_avg, colour = "Avg. monthly traffic violation"),
-              size = 1.5, linetype = "dashed") +
-    theme_light() +
-    labs(x = "Year",
+              size = 1, linetype = "dashed") +
+    theme_minimal() +
+    labs(x = "",
          y = "No. of MVC",
          colour = "") +
     theme(plot.title = element_text(face = "bold", family = "Times", hjust = 0.5),
@@ -42,25 +45,31 @@ ggsave("traffic violation.jpg", width = 25, height = 15, units = "cm")
 
 # 2. MAJOR AND MINOR OFFENCEE --------------------------------------------
 
-# violation_data %>% 
-#     select(Offence_Name) %>% 
-#     unique() %>% 
-#     View()
 
-major_off_list <- c("Using mobile phone while driving", "Unlicensed driving", "Reckless Driving", "Over speeding", "Over-loading", "No RC on the spot", "No DL while driving", "Invalid DL", "Hit and run", "Excess passenger", "DUI", "Driving while intoxicated")
+major_off_list <- c("Using mobile phone while driving", "Unlicensed driving",
+                    "Reckless Driving", "Over speeding", "Over-loading",
+                    "Hit and run", "Excess passenger", "DUI",
+                    "Driving while intoxicated")
 
+#Categorize offense into major and minor
 maj_min_offence <- violation_data %>% 
-    mutate(offence_category = ifelse(Offence_Name %in% major_off_list, 
-                                     "Major_offence", "Minor_offence")) %>%
-    group_by(offence_date = floor_date(Offence_Date, "month"), offence_category) %>%
-    summarize(no_of_off = n()) %>% 
-    filter(!is.na(offence_date)) %>% 
-    filter(year(offence_date) > 2011) %>%
-    filter(year(offence_date) < 2020)
+  mutate(offence_category = ifelse(Offence_Name %in% major_off_list, 
+                                   "Major_offence", "Minor_offence")) %>%
+  group_by(offence_date = floor_date(Offence_Date, "month"), offence_category) %>%
+  summarize(no_of_off = n()) %>% 
+  filter(!is.na(offence_date)) %>% 
+  filter(year(offence_date) > 2011) %>%
+  filter(year(offence_date) < 2020)
 
 maj_min_offence %>% 
-    ggplot(aes(x = offence_date, y = no_of_off, colour = offence_category)) +
-    geom_line()
+  ggplot(aes(x = offence_date, y = no_of_off, colour = offence_category)) +
+  geom_line() +
+  labs(x = "",y = "", color = "") +
+  scale_color_manual(values = c("#8B3A3A", "#E6C1C1")) +
+  theme_minimal() +
+  theme(legend.position = "top")
+
+ggsave("major_minor_offence.jpg", width = 25, height = 12, units = "cm")
 
 # 3. MVC CASAULTIES -------------------------------------------------------
 
@@ -75,24 +84,30 @@ MVC_data <-  MVC_data %>%
     separate(Elements, c("crash_severity", "gender"), sep = "_")
 
 MVC_data %>% 
-    ggplot(aes(x = Time, y = Frequency, color = gender)) +
-    geom_line() +
-    facet_grid(crash_severity~.,) +
-    theme_bw() +
-    labs(x = "Year",
-         y = "Number of road users",
-         # title = "Trend of road user injury and death due to motor vehicle crash",
-         color = "") +
-    scale_color_discrete(labels = c("Female", "Male")) +
-    theme(axis.text = element_text(size = 11, family = "Times"),
-          axis.title = element_text(size = 12, family = "Times"),
-          plot.title = element_text(size = 15, family = "Times", face = "bold",
-                                    hjust = 0.5),
-          legend.position = "top")
+  ggplot(aes(x = Time, y = Frequency, color = gender)) +
+  geom_line() +
+  facet_grid(crash_severity~.,) +
+  theme_minimal() +
+  labs(x = "",
+       y = "Number of casualties",
+       color = ""
+  ) +
+  my_theme +
+  scale_color_manual(values = c("#8B3A3A", "#4682B4"), 
+                     labels = c("Female", "Male")) 
+
 ggsave("MVC injury and death trend.jpg", width = 25, height = 15, units = "cm")    
 
-MVC_data %>% 
-    group_by()
+# MVC_data_original %>% 
+#   ggplot(aes(x = Time, y = no_MVC)) +
+#   geom_line(color = "#045a8d") +
+#   theme_minimal() +
+#   labs(x = "",
+#        y = "Number of casualties",
+#        color = "Gender")
+# 
+# ggsave("MVC by year.jpg", width = 25, height = 15, units = "cm")   
+
 # 3. REPEATED OFFENDERS -----------------------------------------------
 
 violation_individual <- violation_data %>% 
@@ -121,7 +136,6 @@ ggsave("repeated offence.jpg", width = 20, height = 15, units = "cm")
 
 violation_individual$new_ref <- 1:nrow(violation_individual)
 
-
 more_than_2_off <- violation_data %>% 
     filter(!is.na(Driving_License_No)) %>% 
     group_by(Driving_License_No, Offence_Name) %>% 
@@ -134,6 +148,9 @@ more_than_2_off %>%
     select(Driving_License_No) %>% 
     unique() %>% 
     count()
+
+violation_individual
+
 
 # 4. PREDICTING MVC -------------------------------------------------------
 
@@ -148,15 +165,14 @@ MVC_data %>%
 
 MVC_data_original %>% 
     ggplot(aes(x = Time, y = no_MVC)) +
-    geom_line(colour = c("#F08080"))+
-    geom_point(colour = c("#B22222"), size = 2) +
-    labs(x = "Year", 
+    geom_line(colour = "#E6C1C1") +
+    geom_point(colour = "#8B3A3A", size = 1.1) +
+    labs(x = "", 
          y = "No. of MVC") +
-    scale_x_datetime(date_breaks = "1 year", date_labels = "%Y")+
-    theme_light() +
-    my_theme
+    scale_x_datetime(date_breaks = "1 year", date_labels = "%Y") +
+    theme_minimal()
 
-ggsave("MVC 2015-2019.jpg", width = 25, height = 15, units = "cm")
+ggsave("MVC 2015-2019.jpg", width = 25, height = 12, units = "cm")
 
 # 6. MVC vs population and MVC vs vehicle population ----------------------
 
@@ -175,17 +191,16 @@ veh_n_pop <- left_join(MV_year, population, by = "Year") %>%
     mutate(ppl_to_veh = ann_population/MV)
 
 veh_n_pop %>% 
-    ggplot(aes(x = Year, y = ppl_to_veh)) +
-    geom_line(color = c("#4682B4")) +
-    # geom_point() +
-    xlim(1997, 2019) +
-    ylim(2, 41) +
-    labs(x = "Year",
-         y = "No. of people per vehicle") +
-    theme_light() +
-    my_theme
+  ggplot(aes(x = Year, y = ppl_to_veh)) +
+  geom_line(color = c("#4682B4")) +
+  # geom_point() +
+  xlim(1995, 2019) +
+  ylim(0, 50) +
+  labs(x = "",
+       y = "No. of people per vehicle") +
+  theme_minimal()
 
-ggsave("Veh_pop_ratio.jpg", width = 20, height = 15, units = "cm")
+ggsave("Veh_pop_ratio.jpg", width = 25, height = 12, units = "cm")
 
 MVC_2016_2019 <- MVC_data_original %>% 
     mutate(death = death_M + death_F) %>% 
@@ -220,4 +235,14 @@ MVC_2016_2019 %>%
 ggsave("death ratio.jpg", width = 25, height = 15, units = "cm")    
 
 
+# Vehicle populaiton by year
 
+MV_year %>% 
+  ggplot(aes(x = Year, y = MV)) +
+  geom_line(color = "#569AD677") +
+  geom_point(color = c("#4682B4")) +
+  xlim(1995, 2021) +
+  ylim(0, 120000) +
+  labs(x= "", 
+       y = "No. of vehicles") +
+  theme_minimal()
